@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NABATELE — Show Control</title>
+<style>
+  :root{
+    --bg:#0b0e11;
+    --panel:#12171c;
+    --panel-2:#161c22;
+    --line:#222c34;
+    --line-bright:#33424d;
+    --ink:#d6dde2;
+    --ink-dim:#7c8893;
+    --ink-faint:#4a555e;
+    --cyan:#36c5d6;
+    --amber:#e6a23c;
+    --green:#3fb56a;
+    --red:#d6504a;
+    --home:#e6532e;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:14px;line-height:1.4;
+    display:flex;flex-direction:column;overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:stretch;height:54px;
+    border-bottom:1px solid var(--line);background:var(--panel);
+    flex:0 0 auto;
+  }
+  .brand{
+    display:flex;flex-direction:column;justify-content:center;
+    padding:0 20px;border-right:1px solid var(--line);min-width:230px;
+  }
+  .brand .name{
+    font-family:var(--mono);font-weight:700;letter-spacing:.22em;
+    font-size:15px;color:var(--ink);
+  }
+  .brand .sub{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+    color:var(--ink-faint);text-transform:uppercase;margin-top:2px;
+  }
+  .nav{display:flex;align-items:stretch}
+  .nav button{
+    background:none;border:none;border-right:1px solid var(--line);
+    color:var(--ink-dim);font-family:var(--mono);font-size:11px;
+    letter-spacing:.16em;text-transform:uppercase;padding:0 26px;
+    cursor:pointer;position:relative;transition:color .15s,background .15s;
+  }
+  .nav button:hover{color:var(--ink);background:var(--panel-2)}
+  .nav button.active{color:var(--cyan)}
+  .nav button.active::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--cyan);
+  }
+  .nav .idx{color:var(--ink-faint);margin-right:8px}
+  .nav button.active .idx{color:var(--cyan)}
+
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:0}
+  .statchip{
+    display:flex;flex-direction:column;justify-content:center;align-items:flex-end;
+    padding:0 18px;border-left:1px solid var(--line);height:100%;
+  }
+  .statchip .k{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--ink-faint);text-transform:uppercase}
+  .statchip .v{font-family:var(--mono);font-size:14px;color:var(--ink);margin-top:1px}
+  .statchip .v.live{color:var(--green)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;
+    box-shadow:0 0 0 0 rgba(63,181,106,.6);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,181,106,.5)}70%{box-shadow:0 0 0 6px rgba(63,181,106,0)}100%{box-shadow:0 0 0 0 rgba(63,181,106,0)}}
+
+  /* ---------- workspace ---------- */
+  .workspace{flex:1 1 auto;display:flex;min-height:0}
+  .page{display:none;flex:1;min-height:0}
+  .page.active{display:flex}
+
+  /* ---------- generic panel chrome ---------- */
+  .panel-head{
+    font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-dim);padding:11px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:8px;flex:0 0 auto;
+  }
+  .panel-head .tick{color:var(--cyan)}
+
+  /* ================= PREVIEW ================= */
+  #preview{display:none}
+  #preview.active{display:flex}
+  .viewport-wrap{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--line);min-width:0}
+  .viewport{
+    flex:1;position:relative;overflow:hidden;
+    background:
+      radial-gradient(1200px 700px at 50% 120%, #11181d 0%, var(--bg) 70%);
+  }
+  .grid-floor{position:absolute;inset:0;
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:44px 44px;
+    opacity:.30;
+    transform:perspective(700px) rotateX(62deg) scale(1.7) translateY(38%);
+    transform-origin:center bottom;
+    mask-image:linear-gradient(to top,#000 0%,#000 38%,transparent 78%);
+    -webkit-mask-image:linear-gradient(to top,#000 0%,#000 38%,transparent 78%);
+  }
+  .scene{position:absolute;inset:0}
+  svg.scene-svg{width:100%;height:100%;display:block}
+
+  .winch-node{cursor:pointer}
+  .winch-node .hit{fill:transparent}
+  .winch-node .box{fill:#1b242b;stroke:var(--line-bright);stroke-width:1.2;transition:stroke .15s,fill .15s}
+  .winch-node .lbl{font-family:var(--mono);font-size:10px;fill:var(--ink-dim);text-anchor:middle}
+  .winch-node:hover .box{stroke:var(--cyan);fill:#1f2c33}
+  .winch-node:hover .lbl{fill:var(--ink)}
+  .winch-node.sel .box{stroke:var(--cyan);fill:#22343c}
+  .winch-node.sel .lbl{fill:var(--cyan)}
+  .winch-node.main .box{stroke:var(--amber)}
+  .winch-node.main.sel .box{stroke:var(--amber);fill:#332a1c}
+  .winch-node.main .lbl{fill:#b9924a}
+  .cable{stroke:#2a3942;stroke-width:1;fill:none}
+  .cable.sel{stroke:var(--cyan);stroke-width:1.5;stroke-dasharray:3 3;animation:dash 18s linear infinite}
+  @keyframes dash{to{stroke-dashoffset:-200}}
+
+  .obj-cube .face-t{fill:#243743;stroke:var(--cyan);stroke-width:1.4}
+  .obj-cube .face-l{fill:#192831;stroke:#2c5160;stroke-width:1.2}
+  .obj-cube .face-r{fill:#10202a;stroke:#244451;stroke-width:1.2}
+  .obj-cube .edge{stroke:var(--cyan);stroke-width:1;opacity:.5}
+
+  /* wind arrow widget */
+  .wind-rose{position:absolute;top:16px;right:16px;width:96px;height:96px;
+    border:1px solid var(--line);border-radius:50%;background:rgba(11,14,17,.72);
+    backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center}
+  .wind-rose .ring{position:absolute;inset:8px;border:1px dashed var(--line-bright);border-radius:50%;opacity:.6}
+  .wind-rose .ncard{position:absolute;top:5px;left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:8px;color:var(--ink-faint);letter-spacing:.1em}
+  .wind-rose svg{width:100%;height:100%}
+  .wind-arrow{transform-origin:48px 48px;animation:veer 14s ease-in-out infinite}
+  @keyframes veer{0%{transform:rotate(28deg)}50%{transform:rotate(58deg)}100%{transform:rotate(28deg)}}
+  .wind-read{position:absolute;top:120px;right:16px;width:96px;text-align:center;
+    font-family:var(--mono)}
+  .wind-read .spd{font-size:19px;color:var(--cyan)}
+  .wind-read .spd .u{font-size:10px;color:var(--ink-dim)}
+  .wind-read .gust{font-size:10px;color:var(--ink-dim);margin-top:1px}
+  .wind-read .gust b{color:var(--amber);font-weight:500}
+
+  /* in-preview control dock (lower-left) */
+  .dock{position:absolute;left:16px;bottom:16px;width:300px;
+    background:rgba(13,18,22,.82);backdrop-filter:blur(3px);
+    border:1px solid var(--line);border-radius:5px;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .dock-head{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
+  .dock-modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  .dock-mode{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+    background:var(--panel);border:1px solid var(--line-bright);border-radius:3px;
+    padding:9px 10px;cursor:pointer;transition:.13s;min-height:64px}
+  .dock-mode:hover{border-color:var(--cyan);background:var(--panel-2)}
+  .dock-mode.active{border-color:var(--cyan);background:#13212733;box-shadow:inset 0 -2px 0 var(--cyan)}
+  .dock-mode .mn{font-family:var(--mono);font-size:17px;color:var(--ink-faint);line-height:1}
+  .dock-mode.active .mn{color:var(--cyan)}
+  .dock-mode .ml{font-family:var(--mono);font-size:10.5px;color:var(--ink);letter-spacing:.02em}
+  .dock-mode .mw{font-family:var(--mono);font-size:8.5px;color:var(--ink-dim);letter-spacing:.04em}
+  .dock-sub{display:flex;gap:0;border:1px solid var(--line-bright);border-radius:2px;overflow:hidden;margin-top:1px}
+  .dock-sub i{font-style:normal;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-dim);padding:2px 6px;cursor:pointer;transition:.1s}
+  .dock-sub i+i{border-left:1px solid var(--line-bright)}
+  .dock-sub i.on{background:var(--cyan);color:#06222a}
+  .dock-sub i:not(.on):hover{color:var(--ink);background:var(--panel-2)}
+  .dock-home{display:flex;align-items:center;justify-content:center;gap:9px;
+    background:linear-gradient(180deg,#241310,#1a0e0b);border:1px solid var(--home);border-radius:4px;
+    color:var(--home);cursor:pointer;padding:11px;transition:.14s}
+  .dock-home:hover{background:linear-gradient(180deg,#3a1a12,#23100b);box-shadow:0 0 0 1px var(--home)}
+  .dock-home:active{transform:translateY(1px)}
+  .dock-home .hi{font-size:17px;line-height:1}
+  .dock-home .ht{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.16em;color:#f0795a}
+
+  .stage-tag{position:absolute;right:16px;bottom:14px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.12em;color:var(--ink-faint);text-transform:uppercase;text-align:right}
+  .stage-tag b{color:var(--ink-dim);font-weight:400}
+  .scalebar{position:absolute;right:16px;bottom:36px;display:flex;align-items:center;gap:8px;
+    font-family:var(--mono);font-size:9px;color:var(--ink-faint);letter-spacing:.1em}
+  .scalebar .bar{width:88px;height:1px;background:var(--ink-faint);position:relative}
+  .scalebar .bar::before,.scalebar .bar::after{content:"";position:absolute;top:-3px;width:1px;height:7px;background:var(--ink-faint)}
+  .scalebar .bar::after{right:0}
+
+  /* inspector (right rail) */
+  .inspector{width:300px;flex:0 0 300px;display:flex;flex-direction:column;background:var(--panel)}
+  .insp-body{padding:16px;overflow-y:auto;flex:1}
+  .insp-empty{color:var(--ink-faint);font-family:var(--mono);font-size:11px;line-height:1.7;
+    text-align:center;margin-top:40px;letter-spacing:.04em}
+  .insp-empty .big{font-size:24px;display:block;margin-bottom:10px;opacity:.5}
+  .insp-title{font-family:var(--mono);font-size:20px;letter-spacing:.06em;color:var(--ink);display:flex;align-items:baseline;gap:10px}
+  .insp-title .role{font-size:9px;letter-spacing:.16em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--line-bright);color:var(--ink-dim);border-radius:2px}
+  .insp-title .role.main{color:var(--amber);border-color:#4a3a22}
+  .insp-title .role.side{color:var(--cyan);border-color:#244451}
+
+  .readout{margin-top:18px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+  .readout .row{display:flex;justify-content:space-between;align-items:baseline;padding:11px 13px;border-bottom:1px solid var(--line)}
+  .readout .row:last-child{border-bottom:none}
+  .readout .row .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--ink-dim);text-transform:uppercase}
+  .readout .row .v{font-family:var(--mono);font-size:16px;color:var(--ink)}
+  .readout .row .v .u{font-size:10px;color:var(--ink-faint);margin-left:3px}
+  .readout .row.hi{background:var(--panel-2)}
+  .readout .row.hi .v{color:var(--cyan)}
+
+  /* drum gauge */
+  .drum{margin-top:18px}
+  .drum .cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--ink-dim);text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between}
+  .drum .cap .pct{color:var(--cyan)}
+  .meter{height:10px;border:1px solid var(--line-bright);border-radius:2px;background:#0d1216;overflow:hidden;position:relative}
+  .meter .fill{height:100%;background:linear-gradient(90deg,#2a6f80,var(--cyan));transition:width .25s}
+  .meter .ticks{position:absolute;inset:0;background-image:linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),var(--line) 10%);background-size:10% 100%;opacity:.4}
+  .drum .legend{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--ink-faint);margin-top:5px}
+
+  /* manual adjust */
+  .adjust{margin-top:22px}
+  .adjust .cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--ink-dim);text-transform:uppercase;margin-bottom:10px}
+  .adjust .ctrl{display:flex;align-items:center;gap:8px}
+  .adjust input[type=range]{flex:1;-webkit-appearance:none;height:3px;background:var(--line-bright);border-radius:2px;outline:none}
+  .adjust input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cyan);cursor:pointer;border:2px solid #0b0e11}
+  .adjust input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--cyan);cursor:pointer;border:2px solid #0b0e11}
+  .adjust .numbox{font-family:var(--mono);font-size:13px;color:var(--ink);background:#0d1216;border:1px solid var(--line-bright);border-radius:2px;width:78px;padding:6px 8px;text-align:right}
+  .adjust .numbox:focus{border-color:var(--cyan);outline:none}
+  .adjust .unit{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+  .adjust .step{display:flex;gap:6px;margin-top:10px}
+  .adjust .step button{flex:1;font-family:var(--mono);font-size:11px;color:var(--ink-dim);background:var(--panel-2);border:1px solid var(--line-bright);border-radius:2px;padding:6px;cursor:pointer;transition:.12s}
+  .adjust .step button:hover{color:var(--ink);border-color:var(--cyan);background:#16242a}
+
+  /* ================= CONTROLS ================= */
+  #controls{flex-direction:column;padding:0}
+  #controls.active{display:flex}
+  .ctrl-grid{flex:1;display:grid;grid-template-columns:1fr 360px;min-height:0}
+  .modes-col{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .modes-body{padding:22px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+
+  .mode-card{
+    border:1px solid var(--line);border-radius:4px;background:var(--panel);
+    padding:18px 20px;cursor:pointer;position:relative;transition:.15s;display:flex;gap:18px;align-items:flex-start;
+  }
+  .mode-card:hover{border-color:var(--line-bright);background:var(--panel-2)}
+  .mode-card.active{border-color:var(--cyan);background:#13212733;box-shadow:inset 3px 0 0 var(--cyan)}
+  .mode-card .num{font-family:var(--mono);font-size:26px;color:var(--ink-faint);line-height:1;width:34px;flex:0 0 34px}
+  .mode-card.active .num{color:var(--cyan)}
+  .mode-card .body h3{font-family:var(--mono);font-size:15px;letter-spacing:.04em;color:var(--ink);font-weight:600;display:flex;align-items:center;gap:10px}
+  .mode-card .body .wind-band{font-family:var(--mono);font-size:10px;color:var(--ink-dim);border:1px solid var(--line-bright);padding:1px 7px;border-radius:10px;letter-spacing:.04em}
+  .mode-card .body p{color:var(--ink-dim);font-size:12.5px;margin-top:7px;max-width:46ch}
+  .mode-card .map{font-family:var(--mono);font-size:9px;color:var(--ink-faint);letter-spacing:.1em;margin-top:9px;text-transform:uppercase}
+
+  /* sub-toggle for mode 2 auto/manual */
+  .submode{display:flex;gap:0;margin-top:14px;border:1px solid var(--line-bright);border-radius:3px;overflow:hidden;width:fit-content}
+  .submode button{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-dim);background:#0d1216;border:none;padding:7px 18px;cursor:pointer;transition:.12s}
+  .submode button+button{border-left:1px solid var(--line-bright)}
+  .submode button.on{background:var(--cyan);color:#06222a}
+  .submode button:not(.on):hover{color:var(--ink);background:var(--panel-2)}
+
+  /* home rail */
+  .home-col{display:flex;flex-direction:column;background:var(--panel);min-height:0}
+  .home-body{padding:22px;display:flex;flex-direction:column;flex:1}
+  .home-btn{
+    border:1px solid var(--home);background:linear-gradient(180deg,#241310,#1a0e0b);
+    border-radius:5px;color:var(--home);cursor:pointer;
+    padding:30px 20px;text-align:center;transition:.15s;position:relative;overflow:hidden;
+  }
+  .home-btn:hover{background:linear-gradient(180deg,#3a1a12,#23100b);box-shadow:0 0 0 1px var(--home),0 8px 30px -10px rgba(230,83,46,.5)}
+  .home-btn:active{transform:translateY(1px)}
+  .home-btn .icon{font-size:30px;line-height:1}
+  .home-btn .t{font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:.18em;margin-top:12px;color:#f0795a}
+  .home-btn .s{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:#9a5a45;margin-top:8px;text-transform:uppercase}
+  .home-note{font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--ink-faint);margin-top:18px;letter-spacing:.02em}
+  .home-note b{color:var(--amber);font-weight:400}
+  .settings{margin-top:auto;border-top:1px solid var(--line);padding-top:18px}
+  .settings .cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:12px}
+  .setrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+  .setrow .lbl{font-size:12.5px;color:var(--ink-dim)}
+  .toggle{width:38px;height:20px;border-radius:11px;background:var(--line-bright);position:relative;cursor:pointer;transition:.15s}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ink);transition:.15s}
+  .toggle.on{background:var(--cyan)}
+  .toggle.on::after{left:20px;background:#06222a}
+
+  /* ================= OUTPUT ================= */
+  #output{flex-direction:column}
+  #output.active{display:flex}
+  .out-body{flex:1;overflow-y:auto;padding:0}
+  table.winch-tbl{width:100%;border-collapse:collapse;font-family:var(--mono)}
+  table.winch-tbl thead th{
+    position:sticky;top:0;background:var(--panel);z-index:2;
+    font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);
+    text-align:left;padding:12px 16px;border-bottom:1px solid var(--line-bright);font-weight:500;
+  }
+  table.winch-tbl td{padding:9px 16px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+  table.winch-tbl tr:hover td{background:var(--panel-2)}
+  .grp-row td{background:#0d1216;color:var(--ink-faint);font-size:9px;letter-spacing:.18em;text-transform:uppercase;padding:7px 16px;border-bottom:1px solid var(--line-bright)}
+  .chan{color:var(--ink-faint);font-size:12px}
+  .role-pill{font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:2px;border:1px solid}
+  .role-pill.main{color:var(--amber);border-color:#4a3a22;background:#1c150b}
+  .role-pill.side{color:var(--cyan);border-color:#244451;background:#0c1c22}
+  .id-cell input,.ip-cell input{
+    font-family:var(--mono);font-size:13px;background:#0d1216;border:1px solid var(--line);
+    border-radius:2px;color:var(--ink);padding:6px 9px;width:100%;transition:.12s;
+  }
+  .id-cell input{width:84px;letter-spacing:.06em}
+  .ip-cell input{width:150px}
+  .id-cell input:focus,.ip-cell input:focus{border-color:var(--cyan);outline:none;background:#0e1a1f}
+  .id-cell input.dirty,.ip-cell input.dirty{border-color:var(--amber);color:var(--amber)}
+  .bind-tag{font-size:10px;color:var(--green)}
+  .bind-tag.pending{color:var(--amber)}
+  .out-foot{flex:0 0 auto;border-top:1px solid var(--line);background:var(--panel);
+    display:flex;align-items:center;gap:16px;padding:12px 16px;font-family:var(--mono);font-size:11px;color:var(--ink-dim)}
+  .out-foot .spacer{flex:1}
+  .out-foot code{color:var(--cyan);background:#0c1c22;padding:2px 7px;border-radius:2px;border:1px solid #244451;font-size:11px}
+  .btn-apply{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:#06222a;background:var(--cyan);border:none;border-radius:2px;padding:8px 18px;cursor:pointer;transition:.12s}
+  .btn-apply:hover{background:#4fd6e6}
+  .btn-apply:disabled{background:var(--line-bright);color:var(--ink-faint);cursor:default}
+
+  .footer-bar{flex:0 0 auto;height:26px;border-top:1px solid var(--line);background:var(--panel);
+    display:flex;align-items:center;padding:0 16px;gap:20px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-faint)}
+  .footer-bar .seg{display:flex;gap:7px;align-items:center}
+  .footer-bar .seg b{color:var(--ink-dim);font-weight:400}
+  .footer-bar .right{margin-left:auto}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--line-bright);border-radius:5px;border:2px solid var(--bg)}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar">
+  <div class="brand">
+    <span class="name">NABATELE</span>
+    <span class="sub">Winch Show Control · DD_NETWORK</span>
+  </div>
+  <nav class="nav">
+    <button data-page="preview" class="active"><span class="idx">01</span>Preview</button>
+    <button data-page="controls"><span class="idx">02</span>Controls</button>
+    <button data-page="output"><span class="idx">03</span>Output</button>
+  </nav>
+  <div class="topbar-right">
+    <div class="statchip">
+      <span class="k">Mode</span>
+      <span class="v" id="topMode">Free float</span>
+    </div>
+    <div class="statchip">
+      <span class="k">Wind · PWS_VENEZIA1</span>
+      <span class="v live"><span class="dot"></span>3.4 m/s</span>
+    </div>
+    <div class="statchip">
+      <span class="k">Scale</span>
+      <span class="v">1 mm / unit</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WORKSPACE ===== -->
+<div class="workspace">
+
+  <!-- ========== PREVIEW ========== -->
+  <section id="preview" class="page active">
+    <div class="viewport-wrap">
+      <div class="panel-head"><span class="tick">▸</span> 3D Preview · Stage 1 — cubes</div>
+      <div class="viewport">
+        <div class="grid-floor"></div>
+        <svg class="scene-svg" viewBox="0 0 900 560" id="scene" preserveAspectRatio="xMidYMid meet">
+          <!-- cables (drawn first, behind) -->
+          <g id="cables"></g>
+          <!-- object: faux-iso cube ~8 m, centred high -->
+          <g class="obj-cube" transform="translate(450 210)">
+            <polygon class="face-l" points="-70,18 0,52 0,150 -70,116"/>
+            <polygon class="face-r" points="70,18 0,52 0,150 70,116"/>
+            <polygon class="face-t" points="0,-30 70,18 0,52 -70,18"/>
+            <line class="edge" x1="0" y1="52" x2="0" y2="150"/>
+          </g>
+          <!-- winches -->
+          <g id="winches"></g>
+        </svg>
+
+        <!-- wind rose -->
+        <div class="wind-rose">
+          <span class="ncard">N</span>
+          <div class="ring"></div>
+          <svg viewBox="0 0 96 96">
+            <g class="wind-arrow">
+              <line x1="48" y1="74" x2="48" y2="24" stroke="#36c5d6" stroke-width="2.4"/>
+              <polygon points="48,16 42,30 54,30" fill="#36c5d6"/>
+              <circle cx="48" cy="74" r="2.4" fill="#36c5d6"/>
+            </g>
+          </svg>
+        </div>
+        <div class="wind-read">
+          <div class="spd">3.4<span class="u"> m/s</span></div>
+          <div class="gust">gust <b>5.1</b> · from NE</div>
+        </div>
+
+        <!-- in-preview control dock: the 4 core buttons, mirrored from Controls -->
+        <div class="dock">
+          <div class="dock-head">Mode</div>
+          <div class="dock-modes" id="dockModes">
+            <button class="dock-mode active" data-dmode="1">
+              <span class="mn">1</span><span class="ml">Free float</span><span class="mw">&lt;5 kn</span>
+            </button>
+            <button class="dock-mode" data-dmode="2">
+              <span class="mn">2</span><span class="ml">Winch adjust</span>
+              <span class="dock-sub" id="dockSub">
+                <i class="on" data-dsub="auto">auto</i><i data-dsub="manual">man</i>
+              </span>
+            </button>
+            <button class="dock-mode" data-dmode="3">
+              <span class="mn">3</span><span class="ml">Home</span><span class="mw">land</span>
+            </button>
+          </div>
+          <button class="dock-home" id="dockHome">
+            <span class="hi">⌂</span><span class="ht">TAKE ME HOME</span>
+          </button>
+        </div>
+
+        <div class="scalebar"><span class="bar"></span><span>10 m</span></div>
+        <div class="stage-tag"><b>Stage 1:</b> cubes · no models · rotation off</div>
+      </div>
+    </div>
+
+    <!-- inspector -->
+    <aside class="inspector">
+      <div class="panel-head"><span class="tick">▸</span> Winch inspector</div>
+      <div class="insp-body" id="insp">
+        <div class="insp-empty">
+          <span class="big">⊹</span>
+          Select a winch in the<br>preview to inspect it.<br><br>
+          cable left on drum ·<br>winch→structure distance ·<br>manual length adjust
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ========== CONTROLS ========== -->
+  <section id="controls" class="page">
+    <div class="ctrl-grid">
+      <!-- modes -->
+      <div class="modes-col">
+        <div class="panel-head"><span class="tick">▸</span> Operating mode</div>
+        <div class="modes-body" id="modes">
+
+          <div class="mode-card active" data-mode="1">
+            <div class="num">1</div>
+            <div class="body">
+              <h3>Free float <span class="wind-band">&lt; 5 kn</span></h3>
+              <p>Winches passive, slack catenary. The wind sets position and height — no active compensation. Validated pendulum regime.</p>
+              <div class="map">UI mode 1 = master mode 1</div>
+            </div>
+          </div>
+
+          <div class="mode-card" data-mode="2">
+            <div class="num">2</div>
+            <div class="body">
+              <h3>Free float + winch adjustment <span class="wind-band">8–20 kn</span></h3>
+              <p>Solver holds the structure against the gusting load by distributing tension across 12 winches. Pick how the target is set:</p>
+              <div class="submode" id="submode">
+                <button class="on" data-sub="auto">Automatic</button>
+                <button data-sub="manual">Manual</button>
+              </div>
+              <div class="map">auto = master mode 2 · manual = master mode 3</div>
+            </div>
+          </div>
+
+          <div class="mode-card" data-mode="3">
+            <div class="num">3</div>
+            <div class="body">
+              <h3>Home <span class="wind-band">land</span></h3>
+              <p>Sequenced retract onto the pontoon: lock X/Z, descend on Y by paying out the sides, park. Must finish before gusts reach ~10 m/s.</p>
+              <div class="map">UI mode 3 = master mode 4 · process TBD</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- home rail + settings -->
+      <div class="home-col">
+        <div class="panel-head"><span class="tick">▸</span> Take me home</div>
+        <div class="home-body">
+          <button class="home-btn" id="homeBtn">
+            <div class="icon">⌂</div>
+            <div class="t">TAKE ME HOME</div>
+            <div class="s">Hold to begin descent</div>
+          </button>
+          <div class="home-note">
+            Always available, every page. Triggers the Home sequence regardless of current mode.<br><br>
+            <b>⚠</b> Single-winch fault → bring Home first, then swap. No hot-swap under load.
+          </div>
+
+          <div class="settings">
+            <div class="cap">Settings</div>
+            <div class="setrow"><span class="lbl">Live wind feed</span><div class="toggle on" data-set></div></div>
+            <div class="setrow"><span class="lbl">Mast sensor override</span><div class="toggle" data-set></div></div>
+            <div class="setrow"><span class="lbl">Quay-side limit warnings</span><div class="toggle on" data-set></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== OUTPUT ========== -->
+  <section id="output" class="page">
+    <div class="panel-head"><span class="tick">▸</span> Output · 12-winch addressing &nbsp;—&nbsp; bound via tdu.Dependency</div>
+    <div class="out-body">
+      <table class="winch-tbl">
+        <thead>
+          <tr>
+            <th style="width:60px">#</th>
+            <th style="width:120px">Winch ID</th>
+            <th style="width:90px">Role</th>
+            <th style="width:180px">IP address</th>
+            <th style="width:120px">DMX</th>
+            <th>Binding</th>
+          </tr>
+        </thead>
+        <tbody id="outBody"></tbody>
+      </table>
+    </div>
+    <div class="out-foot">
+      <span>Universe <code>0</code></span>
+      <span>12 × 6 ch = <code>72 ch</code></span>
+      <span>Transport <code>Art-Net</code> <span style="color:var(--ink-faint)">(sACN — confirm)</span></span>
+      <span class="spacer"></span>
+      <span id="dirtyCount" style="color:var(--ink-faint)">no pending edits</span>
+      <button class="btn-apply" id="applyBtn" disabled>Apply changes</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===== FOOTER ===== -->
+<div class="footer-bar">
+  <div class="seg"><b>SITE</b> Arsenale Nord · Bacini di Carenaggio</div>
+  <div class="seg"><b>RUN</b> 16 Jul – 16 Sep 2026</div>
+  <div class="seg"><b>TD</b> 2025.32460</div>
+  <div class="seg right"><b>PROTOTYPE</b> Stage 1 · UI mock</div>
+</div>
+
+<script>
+/* ---------- winch model ----------
+   4 mains (A–D) on the pontoon + 8 side tethers on the §3 splay.        */
+const SIDES = ["NE","ENE","SE","SSE","SW","WSW","NW","NNW"];
+const winches = [];
+// mains A-D
+["A","B","C","D"].forEach((id,i)=>{
+  winches.push({n:i+1, id, role:"main",
+    dist: 41.8 + i*0.6,            // winch→structure (m), demo values
+    drumTotal: 25.0,               // max travel (m)
+    out: 23.2 - i*0.7,             // cable currently paid out (m)
+    ip: `10.0.1.${11+i}`,
+    dmx: 1 + i*6 });
+});
+// sides
+SIDES.forEach((id,i)=>{
+  const near = ["NE","ENE","SW","WSW"].includes(id);
+  winches.push({n:i+5, id, role:"side",
+    dist: near ? 5.9 : 29.4,
+    drumTotal: near ? 26 : 42,
+    out: near ? 24.8 : 41.2,
+    ip: `10.0.2.${21+i}`,
+    dmx: 25 + i*6 });
+});
+
+let selected = null;
+let dirty = {};
+
+/* ---------- page routing ---------- */
+document.querySelectorAll('.nav button').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(b.dataset.page).classList.add('active');
+  };
+});
+
+/* ---------- preview: place winches around the cube ---------- */
+const scene = document.getElementById('winches');
+const cableG = document.getElementById('cables');
+const cx=450, cy=300, attachX=450, attachY=300; // structure base ~ centre
+
+// layout positions (faux plan projected) — ring of sides + mains near centre-bottom
+const layout = [];
+// mains: 4-point pontoon footprint directly under the cube
+[[cx-95,470],[cx-32,492],[cx+32,492],[cx+95,470]].forEach(p=>layout.push(p));
+// sides: elliptical ring
+SIDES.forEach((id,i)=>{
+  const a = (-90 + i*45) * Math.PI/180;
+  layout.push([ cx + Math.cos(a)*330, cy + 30 + Math.sin(a)*210 ]);
+});
+
+winches.forEach((w,i)=>{
+  const [x,y]=layout[i];
+  w._x=x; w._y=y;
+  // cable — mains rise to the cube base, sides to the cube wall
+  const ax = w.role==='main' ? attachX : attachX;
+  const ay = w.role==='main' ? attachY+90 : attachY-50;
+  const c=document.createElementNS('http://www.w3.org/2000/svg','path');
+  c.setAttribute('d',`M ${x} ${y} Q ${(x+ax)/2} ${Math.min(y,ay)-24} ${ax} ${ay}`);
+  c.setAttribute('class','cable');
+  c.dataset.cable=w.id;
+  cableG.appendChild(c);
+  // node
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('class','winch-node '+w.role);
+  g.dataset.id=w.id;
+  g.innerHTML=`
+    <rect class="hit" x="${x-22}" y="${y-22}" width="44" height="44"/>
+    <rect class="box" x="${x-11}" y="${y-9}" width="22" height="18" rx="2"/>
+    <text class="lbl" x="${x}" y="${y+22}">${w.id}</text>`;
+  g.onclick=()=>selectWinch(w.id);
+  scene.appendChild(g);
+});
+
+function selectWinch(id){
+  selected = winches.find(w=>w.id===id);
+  document.querySelectorAll('.winch-node').forEach(n=>n.classList.toggle('sel',n.dataset.id===id));
+  document.querySelectorAll('.cable').forEach(c=>c.classList.toggle('sel',c.dataset.cable===id));
+  renderInspector();
+}
+
+function renderInspector(){
+  const w=selected, el=document.getElementById('insp');
+  if(!w){return;}
+  const left = Math.max(0, w.drumTotal - w.out);
+  const pct = Math.round(w.out / w.drumTotal * 100);
+  const dmxVal = Math.round(w.out / w.drumTotal * 255);
+  el.innerHTML = `
+    <div class="insp-title">${w.id}
+      <span class="role ${w.role}">${w.role==='main'?'Main · pontoon':'Side · '+w.id}</span>
+    </div>
+    <div class="readout">
+      <div class="row hi"><span class="k">Cable left on drum</span><span class="v">${left.toFixed(2)}<span class="u">m</span></span></div>
+      <div class="row"><span class="k">Cable paid out</span><span class="v">${w.out.toFixed(2)}<span class="u">m</span></span></div>
+      <div class="row"><span class="k">Winch → structure</span><span class="v">${w.dist.toFixed(2)}<span class="u">m</span></span></div>
+      <div class="row"><span class="k">DMX value</span><span class="v">${dmxVal}<span class="u">/255</span></span></div>
+    </div>
+    <div class="drum">
+      <div class="cap"><span>Drum usage</span><span class="pct">${pct}%</span></div>
+      <div class="meter"><div class="fill" style="width:${pct}%"></div><div class="ticks"></div></div>
+      <div class="legend"><span>0 m</span><span>${w.drumTotal.toFixed(0)} m total travel</span></div>
+    </div>
+    <div class="adjust">
+      <div class="cap">Manual cable length</div>
+      <div class="ctrl">
+        <input type="range" id="lenRange" min="0" max="${w.drumTotal}" step="0.01" value="${w.out}">
+        <input type="text" class="numbox" id="lenNum" value="${w.out.toFixed(2)}">
+        <span class="unit">m</span>
+      </div>
+      <div class="step">
+        <button data-d="-1">−1.00</button>
+        <button data-d="-0.1">−0.10</button>
+        <button data-d="0.1">+0.10</button>
+        <button data-d="1">+1.00</button>
+      </div>
+    </div>`;
+
+  const range=el.querySelector('#lenRange');
+  const num=el.querySelector('#lenNum');
+  const apply=v=>{
+    v=Math.max(0,Math.min(w.drumTotal, v));
+    w.out=v; range.value=v; num.value=v.toFixed(2);
+    renderInspector(); // refresh readouts
+    // keep focus where useful
+  };
+  range.oninput=()=>{w.out=parseFloat(range.value);
+    num.value=w.out.toFixed(2);
+    // light refresh without full re-render to keep slider grabbed
+    const left=Math.max(0,w.drumTotal-w.out), pct=Math.round(w.out/w.drumTotal*100);
+    el.querySelector('.readout .row.hi .v').innerHTML=`${left.toFixed(2)}<span class="u">m</span>`;
+    el.querySelectorAll('.readout .row')[1].querySelector('.v').innerHTML=`${w.out.toFixed(2)}<span class="u">m</span>`;
+    el.querySelector('.drum .pct').textContent=pct+'%';
+    el.querySelector('.meter .fill').style.width=pct+'%';
+    el.querySelector('.readout .row:nth-child(4) .v').innerHTML=`${Math.round(w.out/w.drumTotal*255)}<span class="u">/255</span>`;
+  };
+  num.onchange=()=>apply(parseFloat(num.value)||0);
+  el.querySelectorAll('.step button').forEach(b=>b.onclick=()=>apply(w.out+parseFloat(b.dataset.d)));
+}
+
+/* ---------- shared mode state (drives Controls tab AND preview dock) ---------- */
+let curMode="1";          // "1" | "2" | "3"
+let curSub="auto";        // "auto" | "manual"  (only meaningful for mode 2)
+const MODE_LABEL={"1":"Free float","2auto":"Winch auto","2manual":"Winch manual","3":"Home"};
+
+function modeKey(){ return curMode==="2" ? "2"+curSub : curMode; }
+
+function syncMode(){
+  // controls cards
+  document.querySelectorAll('.mode-card').forEach(c=>
+    c.classList.toggle('active', c.dataset.mode===curMode));
+  // controls submode
+  document.querySelectorAll('.submode button').forEach(b=>
+    b.classList.toggle('on', b.dataset.sub===curSub));
+  // dock modes
+  document.querySelectorAll('.dock-mode').forEach(c=>
+    c.classList.toggle('active', c.dataset.dmode===curMode));
+  // dock submode
+  document.querySelectorAll('.dock-sub i').forEach(i=>
+    i.classList.toggle('on', i.dataset.dsub===curSub));
+  // top bar
+  document.getElementById('topMode').textContent=MODE_LABEL[modeKey()]||modeKey();
+}
+
+function setMode(m){ curMode=String(m); syncMode(); }
+function setSub(s){ curSub=s; if(curMode!=="2"){curMode="2";} syncMode(); }
+
+/* controls tab */
+document.querySelectorAll('.mode-card').forEach(card=>{
+  card.onclick=(e)=>{ if(e.target.closest('.submode'))return; setMode(card.dataset.mode); };
+});
+document.querySelectorAll('.submode button').forEach(b=>{ b.onclick=()=>setSub(b.dataset.sub); });
+
+/* preview dock */
+document.querySelectorAll('.dock-mode').forEach(card=>{
+  card.onclick=(e)=>{ if(e.target.closest('.dock-sub'))return; setMode(card.dataset.dmode); };
+});
+document.querySelectorAll('.dock-sub i').forEach(i=>{
+  i.onclick=(e)=>{ e.stopPropagation(); setSub(i.dataset.dsub); };
+});
+
+/* settings toggles */
+document.querySelectorAll('.toggle[data-set]').forEach(t=>t.onclick=()=>t.classList.toggle('on'));
+
+/* both home buttons → mode 3 */
+function triggerHome(){
+  setMode("3");
+  const s=document.querySelector('#homeBtn .s');
+  if(s){s.textContent="Home sequence armed…";
+    setTimeout(()=>s.textContent="Hold to begin descent",1800);}
+}
+document.getElementById('homeBtn').onclick=triggerHome;
+document.getElementById('dockHome').onclick=triggerHome;
+
+/* ---------- output table ---------- */
+const outBody=document.getElementById('outBody');
+function buildOutput(){
+  outBody.innerHTML='';
+  const addGroup=t=>{const tr=document.createElement('tr');tr.className='grp-row';
+    tr.innerHTML=`<td colspan="6">${t}</td>`;outBody.appendChild(tr);};
+  addGroup('Main tethers · pontoon');
+  winches.filter(w=>w.role==='main').forEach(addRow);
+  addGroup('Side tethers · compass splay');
+  winches.filter(w=>w.role==='side').forEach(addRow);
+}
+function addRow(w){
+  const tr=document.createElement('tr');
+  const chEnd=w.dmx+5;
+  tr.innerHTML=`
+    <td class="chan">${String(w.n).padStart(2,'0')}</td>
+    <td class="id-cell"><input value="${w.id}" data-id="${w.id}" data-f="id"></td>
+    <td><span class="role-pill ${w.role}">${w.role}</span></td>
+    <td class="ip-cell"><input value="${w.ip}" data-id="${w.id}" data-f="ip"></td>
+    <td class="chan">${w.dmx}–${chEnd}</td>
+    <td><span class="bind-tag" data-bind="${w.id}">● bound</span></td>`;
+  outBody.appendChild(tr);
+}
+outBody.addEventListener('input',e=>{
+  const inp=e.target; if(!inp.dataset.id)return;
+  const w=winches.find(x=>x.id===inp.dataset.id);
+  const key=inp.dataset.id+'.'+inp.dataset.f;
+  const orig = inp.dataset.f==='id'?w.id:w.ip;
+  if(inp.value!==orig){dirty[key]=inp.value;inp.classList.add('dirty');
+    const bind=document.querySelector(`[data-bind="${inp.dataset.id}"]`);
+    if(bind){bind.classList.add('pending');bind.textContent='● re-binding';}
+  } else {delete dirty[key];inp.classList.remove('dirty');}
+  refreshDirty();
+});
+function refreshDirty(){
+  const n=Object.keys(dirty).length;
+  const c=document.getElementById('dirtyCount');
+  const btn=document.getElementById('applyBtn');
+  if(n){c.textContent=`${n} pending edit${n>1?'s':''}`;c.style.color='var(--amber)';btn.disabled=false;}
+  else{c.textContent='no pending edits';c.style.color='var(--ink-faint)';btn.disabled=true;}
+}
+document.getElementById('applyBtn').onclick=()=>{
+  Object.keys(dirty).forEach(k=>{
+    const [id,f]=k.split('.');const w=winches.find(x=>x.id===id);
+    if(f==='ip')w.ip=dirty[k]; if(f==='id')w.id=dirty[k];
+  });
+  dirty={};
+  document.querySelectorAll('.id-cell input,.ip-cell input').forEach(i=>i.classList.remove('dirty'));
+  document.querySelectorAll('.bind-tag').forEach(b=>{b.classList.remove('pending');b.textContent='● bound';});
+  refreshDirty();
+};
+
+buildOutput();
+selectWinch('A');     // start with one selected so the inspector shows
+</script>
+</body>
+</html>
