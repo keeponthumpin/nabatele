@@ -1,0 +1,269 @@
+{
+  "version": 1,
+  "winches": [
+    {
+      "winch_id": 0,
+      "winch_name": "A",
+      "winch_type": "WAHLBERG_100",
+      "position": {
+        "x": 4000,
+        "y": 0,
+        "z": 4000
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "winch_id": 1,
+      "winch_name": "B",
+      "winch_type": "WAHLBERG_100",
+      "position": {
+        "x": 4000,
+        "y": 0,
+        "z": -4000
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "winch_id": 2,
+      "winch_name": "C",
+      "winch_type": "WAHLBERG_100",
+      "position": {
+        "x": -4000,
+        "y": 0,
+        "z": -4000
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "winch_id": 3,
+      "winch_name": "D",
+      "winch_type": "WAHLBERG_100",
+      "position": {
+        "x": -4000,
+        "y": 0,
+        "z": 4000
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "winch_id": 4,
+      "winch_name": "NE",
+      "winch_type": "WAHLBERG_50",
+      "position": {
+        "x": -15000,
+        "y": 0.0015298986,
+        "z": 35000
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          10,
+          0,
+          0,
+          101
+        ]
+      }
+    },
+    {
+      "winch_id": 5,
+      "winch_name": "ENE",
+      "winch_type": "WAHLBERG_50",
+      "position": {
+        "x": 15000,
+        "y": 0.0015298986,
+        "z": 35000
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          10,
+          0,
+          0,
+          102
+        ]
+      }
+    },
+    {
+      "winch_id": 6,
+      "winch_name": "SE",
+      "winch_type": "WAHLBERG_50",
+      "position": {
+        "x": -15000,
+        "y": 0.00050996616,
+        "z": 11666.666
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          10,
+          0,
+          0,
+          103
+        ]
+      }
+    },
+    {
+      "winch_id": 7,
+      "winch_name": "SSE",
+      "winch_type": "WAHLBERG_50",
+      "position": {
+        "x": 15000,
+        "y": 0.00050996616,
+        "z": 11666.666
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          10,
+          0,
+          0,
+          104
+        ]
+      }
+    },
+    {
+      "winch_id": 8,
+      "winch_name": "SW",
+      "winch_type": "WAHLBERG_50",
+      "position": {
+        "x": -15000,
+        "y": -0.0005099663,
+        "z": -11666.668
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          10,
+          0,
+          0,
+          105
+        ]
+      }
+    },
+    {
+      "winch_id": 9,
+      "winch_name": "WSW",
+      "winch_type": "WAHLBERG_50",
+      "position": {
+        "x": 15000,
+        "y": -0.0005099663,
+        "z": -11666.668
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          10,
+          0,
+          0,
+          106
+        ]
+      }
+    },
+    {
+      "winch_id": 10,
+      "winch_name": "NW",
+      "winch_type": "WAHLBERG_50",
+      "position": {
+        "x": -15000,
+        "y": -0.0015298986,
+        "z": -35000
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          10,
+          0,
+          0,
+          107
+        ]
+      }
+    },
+    {
+      "winch_id": 11,
+      "winch_name": "NNW",
+      "winch_type": "WAHLBERG_50",
+      "position": {
+        "x": 15000,
+        "y": -0.0015298986,
+        "z": -35000
+      },
+      "address": {
+        "dmx_address": 0,
+        "net": 0,
+        "subnet": 0,
+        "universe": 0,
+        "ip": [
+          10,
+          0,
+          0,
+          108
+        ]
+      }
+    }
+  ]
+}
