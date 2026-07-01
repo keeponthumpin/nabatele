@@ -72,5 +72,7 @@ class Winch:
             instance.
     """
     winch_type: WinchType | None = None
+    winch_id: int = field(default_factory=int)
+    winch_name: str = field(default_factory=str)
     position: Position = field(default_factory=Position)
     address: Address = field(default_factory=Address)

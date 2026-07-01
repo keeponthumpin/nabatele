@@ -48,10 +48,8 @@ def cook(scriptOp):
 	scriptOp.pointAttribs.create('ip_2', 0)
 	scriptOp.pointAttribs.create('ip_3', 0)
 
-	for i, r in enumerate(records):
-		octets = [int(o) for o in r['ip'].split('.')]
-		if len(octets) != 4:
-			octets = [0, 0, 0, 0]
+	for r in records:
+		octets = r['ip']
 		p = scriptOp.appendPoint()
 		p.x = r['px']
 		p.y = r['py']
@@ -61,7 +59,7 @@ def cook(scriptOp):
 		p.net = r['net']
 		p.subnet = r['subnet']
 		p.universe = r['universe']
-		p.idx = i
+		p.idx = r['idx']
 		p.ip_0 = octets[0]
 		p.ip_1 = octets[1]
 		p.ip_2 = octets[2]

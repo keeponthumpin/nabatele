@@ -30,6 +30,7 @@ class interfaceextension:
 
     def __init__(self, ownerComp):
         self.ownerComp = ownerComp
+        self._active_tab = tdu.Dependency('Preview')
         # Bump to force token-watching ops to refresh (e.g. on theme edit).
         TDF.createProperty(self, 'Revision', value=1, dependable=True,
                            readOnly=False)
@@ -53,3 +54,11 @@ class interfaceextension:
         for row in theme.palette_rows():
             dat.appendRow(row)
         return dat
+    
+    @property
+    def ActiveTab(self):
+        return self._active_tab.val
+    
+    @ActiveTab.setter
+    def ActiveTab(self, value):
+        self._active_tab.val = value

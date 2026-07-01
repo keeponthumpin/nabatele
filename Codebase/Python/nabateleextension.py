@@ -12,6 +12,7 @@ class nabateleextension:
 		self._codebase: td.baseCOMP = self._ownerComp.op("codebase")
 		self._interface = self._ownerComp.op("interface")
 		self._input_data = self._ownerComp.op("input_data")
+		self._player = self._ownerComp.op("player")
 
 	
 	@property
@@ -19,9 +20,25 @@ class nabateleextension:
 		return self._codebase
 
 	@property
-	def Interface(self):
+	def InterfaceExt(self):
 		return self._interface.extensions[0]
+	
+	@property
+	def Interface(self):
+		return self._interface
 
 	@property
-	def InputData(self):
+	def InputDataExt(self):
 		return self._input_data.extensions[0]
+	
+	@property
+	def InputData(self):
+		return self._input_data
+	
+	@property
+	def PlayerExt(self):
+		return self._player.extensions[0]
+	
+	@property
+	def Player(self):
+		return self._player

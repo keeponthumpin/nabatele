@@ -27,12 +27,12 @@ COL_W = {0: 70, 1: 130, 2: 110, 3: 190, 4: 190, 5: 190, 6: 190}
 # Alignment per column, shared by header and data rows so labels sit
 # directly above their values.
 ALIGN = {
-	COL['id']:   (JustifyType.CENTER, 0),
+	COL['id']:   (JustifyType.CENTERRIGHT, -14),
 	COL['type']: (JustifyType.CENTER, 0),
 	COL['name']: (JustifyType.CENTER, 0),
-	COL['x']:    (JustifyType.CENTER, 0),
-	COL['y']:    (JustifyType.CENTER, 0),
-	COL['z']:    (JustifyType.CENTER, 0),
+	COL['x']:    (JustifyType.CENTERRIGHT, -14),
+	COL['y']:    (JustifyType.CENTERRIGHT, -14),
+	COL['z']:    (JustifyType.CENTERRIGHT, -14),
 	COL['ip']:   (JustifyType.CENTER, 0),
 }
 
@@ -93,8 +93,8 @@ def onInitCell(comp, row, col, attribs):
 	if row == HEADER_ROW:
 		attribs.bgColor = _c('topbar_bg')
 		attribs.textColor = _c('ink_dim')
-		attribs.fontSizeX = _t('eyebrow')
-		justify, offset = ALIGN.get(col, (JustifyType.CENTERLEFT, 14))
+		attribs.fontSizeX = _t('eyebrow')+1
+		justify, offset = ALIGN.get(col, (JustifyType.CENTER, 14))
 		attribs.textJustify = justify
 		attribs.textOffsetX = offset
 		return
