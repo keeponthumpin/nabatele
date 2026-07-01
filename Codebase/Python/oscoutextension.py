@@ -35,7 +35,7 @@ class oscoutextension:
 		self._network_address.val = value
 	
 	def _get_channels_names(self, amount):
-		return [f'winch{i}/value/' for i in range(amount)]
+		return [f'winch{i}' for i in range(amount)]
 
 
 	def GetChannelNames(self):
